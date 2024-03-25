@@ -9,8 +9,11 @@ import (
 )
 
 type UserBasic struct {
-	gorm.Model           // 嵌入 gorm.Model，如果您不需要 gorm.Model 自带的字段，可以去除
-	Name          string `json:"name"`
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	DeletedAt     time.Time `gorm:"index" json:"-"`
+	ID            uint      `json:"userId" gorm:"primaryKey;autoIncrement:true"`
+	Name          string    `json:"name"`
 	PassWord      string
 	Phone         string `valid:"matches(^1[3-9]\\d{9}$)"`
 	Email         string `valid:"email"`

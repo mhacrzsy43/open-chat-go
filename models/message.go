@@ -14,11 +14,11 @@ import (
 
 type Message struct {
 	gorm.Model
-	FromId   string
-	TargetId string
-	Type     int //消息类型 群聊、私聊
-	Media    int //消息类型 文字、图片、音频、视频
-	Content  string
+	FromId   string `json:"fromId"`
+	TargetId string `json:"targetId"`
+	Type     int    `json:"type"`
+	Media    int    //消息类型 文字、图片、音频、视频
+	Content  string `json:"content"`
 	Pic      string
 	Url      string
 	Desc     string
@@ -44,7 +44,6 @@ var rwLocker sync.RWMutex
 func Chat(writer http.ResponseWriter, request *http.Request) {
 	query := request.URL.Query()
 	userId := query.Get("userId")
-	targetId := query.Get("targetId")
 	// context := query.Get("context")
 	// msgType := query.Get("type")
 	// isValid := true //检验token
@@ -75,14 +74,25 @@ func Chat(writer http.ResponseWriter, request *http.Request) {
 	//完成接受逻辑
 	go recvProc(node)
 	// 假设context已经是[]byte类型，如果不是，需要转换
-	sendMsg(userId, targetId, []byte("欢迎进入 聊天。。。"))
+	msg := Message{}
+	msg.Content = "欢迎进入聊天"
+	// 尝试将msg序列化为JSON
+	data, err := json.Marshal(&msg)
+	if err != nil {
+		// 处理错误，例如记录或返回错误信息
+		fmt.Println("JSON序列化失败：", err)
+		return // 或者继续其他逻辑处理
+	}
+
+	// 如果没有错误，发送序列化后的数据
+	sendMsg(userId, userId, data)
 }
 
 func sendProc(node *Node) {
 	for {
 		select {
 		case data := <-node.DataQueue:
-			fmt.Println("[ws]SendProc >>> msg: ", data)
+			fmt.Println("【ws：0000】SendProc >>> msg: ", data)
 			err := node.Conn.WriteMessage(websocket.TextMessage, data)
 			if err != nil {
 				fmt.Println(err)
@@ -99,7 +109,7 @@ func recvProc(node *Node) {
 			fmt.Println(err)
 			return
 		}
-		fmt.Println("[ws]<<<<<<<", string(data))
+		fmt.Println("【ws：11111】<<<<<<<", string(data))
 		broadMsg(data)
 	}
 }
@@ -128,7 +138,7 @@ func udpSendProc() {
 	for {
 		select {
 		case data := <-udpsendChan:
-			fmt.Println("udpSendProc data:", string(data))
+			fmt.Println("【ws：22222】udpSendProc data:", string(data))
 			_, err := con.Write(data)
 			if err != nil {
 				fmt.Println(err)
@@ -155,7 +165,7 @@ func udpprecvProc() {
 			fmt.Println(err)
 			return
 		}
-		fmt.Println("udpRecvRroc data:, string(n)")
+		fmt.Println("【ws：33333】udpRecvRroc data:, string(n)")
 		dispatch(buf[0:n])
 	}
 }
@@ -178,7 +188,7 @@ func dispatch(data []byte) {
 func sendMsg(userId string, targetId string, msg []byte) {
 	fmt.Println("userMsg====userId", userId, "=====targetId", targetId)
 	rwLocker.RLock()
-	node, ok := clientMap[userId]
+	node, ok := clientMap[targetId]
 	rwLocker.RUnlock()
 	if ok {
 		node.DataQueue <- msg

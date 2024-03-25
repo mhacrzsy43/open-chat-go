@@ -47,3 +47,13 @@ func ValidateToken(tokenString string) (*Claims, error) {
 
 	return claims, nil
 }
+
+// GetUserIDFromToken extracts userID from the jwt token if valid
+func GetUserIDFromToken(tokenString string) (uint, error) {
+	claims, err := ValidateToken(tokenString)
+	if err != nil {
+		return 0, err // Return 0 for userID in case of error (0 is not a valid userID)
+	}
+
+	return claims.UserID, nil
+}
