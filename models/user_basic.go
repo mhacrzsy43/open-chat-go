@@ -1,6 +1,7 @@
 package models
 
 import (
+	"database/sql"
 	"fmt"
 	"ginchat/utils"
 	"time"
@@ -11,9 +12,9 @@ import (
 type UserBasic struct {
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
-	DeletedAt     time.Time `gorm:"index" json:"-"`
-	ID            uint      `json:"userId" gorm:"primaryKey;autoIncrement:true"`
-	Name          string    `json:"name"`
+	DeletedAt     sql.NullTime `gorm:"index" json:"-"`
+	ID            uint         `json:"userId" gorm:"primaryKey;autoIncrement:true"`
+	Name          string       `json:"name"`
 	PassWord      string
 	Phone         string `valid:"matches(^1[3-9]\\d{9}$)"`
 	Email         string `valid:"email"`
@@ -67,12 +68,13 @@ func FindUserByEmail(email string) UserBasic {
 	return user
 }
 
-func CreateUser(user UserBasic) *gorm.DB {
+func CreateUser(user UserBasic) UserBasic {
 	err := utils.DB.Create(&user)
 	if err != nil {
 		fmt.Println("插入用户失败", err)
+		return UserBasic{}
 	}
-	return utils.DB.Create(&user)
+	return user
 }
 
 func DeleteUser(user UserBasic) *gorm.DB {
