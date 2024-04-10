@@ -138,7 +138,11 @@ func RegisterUser(c *gin.Context) {
 		Salt:     salt,
 	}
 
-	models.CreateUser(user)
+	userRes := models.CreateUser(user)
+	if userRes.Name == "" {
+		utils.RespFail(c.Writer, "注册失败")
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"code":    0, //正常 -1 失败
 		"message": "注册用户成功",
